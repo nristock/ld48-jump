@@ -51,7 +51,7 @@ public class PlayerController : MonoBehaviour
 	        if (Input.GetKey(KeyCode.Space))
 	        {
 	            isJumping = true;
-                audio.PlayOneShot(jumpSound, 2);
+                audio.PlayOneShot(jumpSound, .4f);
 	        }
 
 	    }
@@ -60,7 +60,7 @@ public class PlayerController : MonoBehaviour
         
         if (isJumping)
         {
-            jumpTime += Time.deltaTime * jumpAccelerationSpeed * speedMultiplier;
+            jumpTime += Time.deltaTime * jumpAccelerationSpeed;
             movementDirection.y = Mathf.Lerp(0, jumpSpeed, jumpTime);
 
             if (jumpTime >= 1)
@@ -79,9 +79,11 @@ public class PlayerController : MonoBehaviour
 	        movementDirection.y -= gravity*Time.deltaTime;
 	    }
 
+	    movementDirection.z = 0;
+
+
 	    if (characterController.Move(movementDirection*Time.deltaTime*speedMultiplier).Equals(CollisionFlags.CollidedAbove))
 	    {
-            Debug.Log("Aborting jump");
 	        isJumping = false;
 	        jumpTime = .2f;
 	    }

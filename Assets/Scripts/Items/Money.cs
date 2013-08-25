@@ -8,7 +8,7 @@ public class Money : MonoBehaviour
     private void OnTriggerEnter()
     {
         WorldManager.PlayerController.money++;
-        audio.PlayOneShot(collectSound);
+        audio.PlayOneShot(collectSound, .4f);
         renderer.enabled = false;
         collider.enabled = false;
         Destroy(gameObject, 0.25f);

@@ -5,6 +5,7 @@ public class LevelManager : MonoBehaviour
 {
     public GameObject paddlePrefab;
     public GameObject playerPrefab;
+    public GameObject spikePrefab;
 
     public Material normalPaddleMaterial;
     public Material targetPaddleMaterial;
@@ -12,20 +13,21 @@ public class LevelManager : MonoBehaviour
     public float minPaddleDistance = 5;
     public float maxPaddleDistance = 11;
 
-    public int maxPaddlesPerLevel = 15;
+    public int maxPaddlesPerLevel = 12;
 
     private GameObject playerInstance;
     private GameObject currentEndPaddle;
     private GameObject currentExtensionHandler;
     private readonly List<GameObject> activePaddles = new List<GameObject>();
-    private readonly List<GameObject> items = new List<GameObject>(); 
+    //private readonly List<GameObject> items = new List<GameObject>();
+    private readonly List<GameObject> spikes = new List<GameObject>(); 
 
     public float decayTimer { get; private set; }
-
     public int currentLevel { get; private set; }
 
 
-    private bool gameRunning = false;
+    private bool gameRunning;
+    private bool stopDecay;
 
     private void Start()
     {
@@ -50,14 +52,24 @@ public class LevelManager : MonoBehaviour
         paddleObject.transform.position = location;
 
         // Item spawning
-        if (Random.Range(0, 100)%10 == 1)
+        if (Random.Range(0, 100)%10 == 0)
         {
-            items.Add(WorldManager.ItemManager.makeRandomItem(paddleObject.transform.position + Vector3.up*2f));
+            var item = WorldManager.ItemManager.makeRandomItem(paddleObject.transform.position + Vector3.up*2f);
+            item.transform.parent = paddleObject.transform;
+            //items.Add(item);
         }
         else
         {
-            items.Add(WorldManager.ItemManager.makeMoney(paddleObject.transform.position + Vector3.up*1.5f));
+            var item = WorldManager.ItemManager.makeMoney(paddleObject.transform.position + Vector3.up*1.5f);
+            item.transform.parent = paddleObject.transform;
+           // items.Add(item);
         }
+
+        if (Random.Range(0, 100)%Mathf.Max(2, 20 - currentLevel) == 0)
+        {
+            paddleObject.AddComponent<MovingPaddle>();
+        }
+
 
         return paddleObject;
     }
@@ -102,10 +114,10 @@ public class LevelManager : MonoBehaviour
             activePaddles.RemoveAt(0);
         }
 
-        while (items.Count > 1)
+        while (spikes.Count > 4)
         {
-            Destroy(items[0]);
-            items.RemoveAt(0);
+            Destroy(spikes[0]);
+            spikes.RemoveAt(0);
         }
     }
 
@@ -134,10 +146,48 @@ public class LevelManager : MonoBehaviour
         // Create new extension handler
         currentExtensionHandler = new GameObject("Extension Handler");
         currentExtensionHandler.transform.position = currentEndPaddle.transform.position + Vector3.up;
+        currentExtensionHandler.transform.parent = currentEndPaddle.transform;
         currentExtensionHandler.AddComponent<BoxCollider>();
-        ((BoxCollider) currentExtensionHandler.collider).isTrigger = true;
+        currentExtensionHandler.collider.isTrigger = true;
         ((BoxCollider) currentExtensionHandler.collider).size = currentEndPaddle.collider.bounds.size*1.5f;
         currentExtensionHandler.AddComponent<LevelContinuationScript>();
+
+        continueSpikes();
+    }
+
+    private void continueSpikes()
+    {
+        var lastSpikePosition = spikePrefab.transform.position;
+        if (spikes.Count > 0)
+        {
+            lastSpikePosition = spikes[spikes.Count - 1].transform.position;
+        }
+        else
+        {
+            // create initial spike
+            var newSpike = (GameObject)Instantiate(spikePrefab);
+            newSpike.transform.position = lastSpikePosition;
+            spikes.Add(newSpike);
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            var nextPosition = nextSpikePosition(lastSpikePosition);
+            if (nextPosition.x > (currentEndPaddle.transform.position.x + 50))
+            {
+                break;
+            }
+
+            var newSpike = (GameObject)Instantiate(spikePrefab);
+            newSpike.transform.position = nextPosition;
+            spikes.Add(newSpike);
+            lastSpikePosition = nextPosition;
+        }
+    }
+
+    private Vector3 nextSpikePosition(Vector3 prevPos)
+    {
+        return prevPos + new Vector3(35.8f, 0, 0);
     }
 
 
@@ -170,7 +220,18 @@ public class LevelManager : MonoBehaviour
             return;
         }
 
-        decayTimer += Time.deltaTime;
+        if (Debug.isDebugBuild)
+        {
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                stopDecay = !stopDecay;
+            }
+        }
+
+        if (!stopDecay)
+        {
+            decayTimer += Time.deltaTime;
+        }
 
         if (decayTimer >= 10)
         {
