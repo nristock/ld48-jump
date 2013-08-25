@@ -1,0 +1,13 @@
+Temp
+Temp/
+Temp/*
+
+Library
+Library/
+Library/*
+
+obj
+obj/
+obj/*
+
+*.suo
